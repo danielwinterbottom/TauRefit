@@ -50,13 +50,11 @@
 #include <memory>
 #include <boost/foreach.hpp>
 #include <TFormula.h>
-
+#include "boost/functional/hash.hpp"
 
 using namespace reco;
 using namespace edm;
 using namespace std;
-
-
 
 
 class AdvancedRefitVertexProducer : public EDProducer {
@@ -87,6 +85,7 @@ class AdvancedRefitVertexProducer : public EDProducer {
 		double deltaPtThreshold;
 		bool useBeamSpot_;
 		bool useLostCands_;
+                bool storeAsMap_;
 	
 		std::vector<edm::EDGetTokenT<reco::CandidateView> > srcLeptons_;
 		std::vector<edm::Ptr<reco::Candidate> > allLeptons_;
@@ -94,6 +93,7 @@ class AdvancedRefitVertexProducer : public EDProducer {
 		std::vector<edm::Ptr<reco::Candidate> > combination_;
 
 		size_t combineNLeptons_;
+                boost::hash<reco::Candidate const*> cand_hasher_;
 
 };
 

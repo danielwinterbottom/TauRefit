@@ -6,6 +6,7 @@
  */
 
 #include "VertexRefit/TauRefit/plugins/AdvancedRefitVertexProducer.h"
+#include <boost/functional/hash.hpp>
 
 using namespace reco;
 using namespace edm;
@@ -23,7 +24,8 @@ AdvancedRefitVertexProducer::AdvancedRefitVertexProducer(const edm::ParameterSet
 	deltaRThreshold(iConfig.getParameter<double>("deltaRThreshold")),
 	deltaPtThreshold(iConfig.getParameter<double>("deltaPtThreshold")),
 	useBeamSpot_(iConfig.getParameter<bool>("useBeamSpot")),
-	useLostCands_(iConfig.getParameter<bool>("useLostCands"))
+	useLostCands_(iConfig.getParameter<bool>("useLostCands")),
+        storeAsMap_(iConfig.getParameter<bool>("storeAsMap"))
 
 
 {
@@ -35,6 +37,7 @@ AdvancedRefitVertexProducer::AdvancedRefitVertexProducer(const edm::ParameterSet
 	combineNLeptons_ = iConfig.getParameter<int>("combineNLeptons");
 
 	produces<std::vector<RefitVertex> >();
+        produces<std::map<std::size_t, reco::Vertex>>();
 }
 
 AdvancedRefitVertexProducer::~AdvancedRefitVertexProducer(){
@@ -102,21 +105,45 @@ void AdvancedRefitVertexProducer::produce(edm::Event& iEvent, const edm::EventSe
 	int vtxIdx=0; // AOD PV
 	
 #if CMSSW_MAJOR_VERSION < 8
+
 	std::auto_ptr<RefitVertexCollection> VertexCollection_out = std::auto_ptr<RefitVertexCollection>(new RefitVertexCollection);
+        std::auto_ptr<std::map<std::size_t, reco::Vertex>> VertexCollectionMap = std::auto_ptr<std::map<std::size_t, reco::Vertex>>(new std::map<std::size_t, reco::Vertex>);
 #else	
 	std::unique_ptr<RefitVertexCollection> VertexCollection_out = std::auto_ptr<RefitVertexCollection>(new RefitVertexCollection);
+        std::unique_ptr<std::map<std::size_t, reco::Vertex>> VertexCollectionMap = std::unique_ptr<std::map<std::size_t, reco::Vertex>>(new std::map<std::size_t, reco::Vertex>);
 #endif
 	
 	// loop over the pairs in combinations_
 	for (std::vector<std::vector<edm::Ptr<reco::Candidate>>>::const_iterator pair = combinations_.begin(); pair != combinations_.end(); ++pair) {
 
-		// create the TrackCollection for the current pair
-		//reco::TrackCollection* newTrackCollection(new TrackCollection);
-		std::auto_ptr<reco::TrackCollection> newTrackCollection = std::auto_ptr<reco::TrackCollection>(new TrackCollection);
-		std::vector<reco::TransientTrack> transTracks;
+                // add some pT cuts to avoid running the refitting many times
+                // For pairs with 2 taus (i.e tt candidates) apply 38 GeV cut
+                // For mu+e pairs apply 10 GeV cut
+                // Skip mumu and ee events alltogether
+                // For all other events (i.e et and mt candidates) apply 20 GeV pT cuts to leptons
 
-		TransientVertex transVtx;
-		RefitVertex newPV(thePV); // initialized to the PV
+                // skip mumu and ee events
+                if ((std::abs(pair->at(0)->pdgId())==11 && std::abs(pair->at(1)->pdgId())==11) || (std::abs(pair->at(0)->pdgId())==13 && std::abs(pair->at(1)->pdgId())==13)) continue;
+                else if ((std::abs(pair->at(0)->pdgId())==11 && std::abs(pair->at(1)->pdgId())==13) || (std::abs(pair->at(0)->pdgId())==13 && std::abs(pair->at(1)->pdgId())==11)) {
+                  // if pair is a mu+e pair 
+                  if(pair->at(0)->pt()<10. || pair->at(1)->pt()<10.) continue; 
+                } else if(std::abs(pair->at(0)->pdgId())==11 || std::abs(pair->at(1)->pdgId())==11 || std::abs(pair->at(0)->pdgId())==13 || std::abs(pair->at(1)->pdgId())==13) {
+                  // if not mu+e or ee or mm pair and on of pair is lepton then we must have a et or mt event
+                  if((std::abs(pair->at(0)->pdgId())==11 || std::abs(pair->at(1)->pdgId())==11) && pair->at(0)->pt()<20.) continue; 
+                  if((std::abs(pair->at(0)->pdgId())==13 || std::abs(pair->at(1)->pdgId())==13) && pair->at(0)->pt()<20.) continue;
+                } else {
+                  // else we must have two taus 
+                  if(pair->at(0)->pt()<38. || pair->at(1)->pt()<38.) continue;
+                }
+
+                // create the TrackCollection for the current pair
+                //reco::TrackCollection* newTrackCollection(new TrackCollection);
+                std::auto_ptr<reco::TrackCollection> newTrackCollection = std::auto_ptr<reco::TrackCollection>(new TrackCollection);
+                std::vector<reco::TransientTrack> transTracks;
+
+                TransientVertex transVtx;
+                RefitVertex newPV(thePV); // initialized to the PV
+
 
 		// loop over the PFCandidates
 		for (std::vector<pat::PackedCandidate>::const_iterator cand = PFCands->begin(); cand != PFCands->end(); ++cand) {
@@ -231,10 +258,13 @@ void AdvancedRefitVertexProducer::produce(edm::Event& iEvent, const edm::EventSe
 
 			// Creating reference to the given pair to create the hash-code
 			size_t iCount = 0;
+                    
 			for (size_t i=0; i<pair->size(); ++i){
 				newPV.addUserCand("lepton"+std::to_string(iCount++), pair->at(i));
 			}
+                        std::size_t hash = cand_hasher_(pair->at(0).get())+cand_hasher_(pair->at(1).get());
 
+                        if(storeAsMap_) VertexCollectionMap->insert ( std::pair<std::size_t,reco::Vertex>(hash,newPV));
 			VertexCollection_out->push_back(newPV);
 		} // if FitOk == true
 
@@ -242,10 +272,19 @@ void AdvancedRefitVertexProducer::produce(edm::Event& iEvent, const edm::EventSe
 
 
 	//if (combinations_.size()==0) VertexCollection_out->push_back((RefitVertex)thePV);
+
 #if CMSSW_MAJOR_VERSION < 8
-	iEvent.put(VertexCollection_out);
+        if(storeAsMap_) {
+            iEvent.put(VertexCollectionMap);
+        } else {
+            iEvent.put(VertexCollection_out);
+        }
 #else
-	iEvent.put(std::move(VertexCollection_out));
+        if(storeAsMap_) {
+            iEvent.put(std::move(VertexCollectionMap));
+        } else { 
+    	    iEvent.put(std::move(VertexCollection_out));
+        }
 #endif
 
 }

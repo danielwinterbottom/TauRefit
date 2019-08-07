@@ -17,6 +17,7 @@ AdvancedRefitVertexBSProducer = cms.EDProducer(
 	srcMuons = cms.InputTag("slimmedMuons"),
 	srcTaus = cms.InputTag("slimmedTaus"),
 	srcLeptons = cms.VInputTag(cms.InputTag("slimmedElectrons"), cms.InputTag("slimmedMuons"), cms.InputTag("slimmedTaus")),
+        storeAsMap = cms.bool(False)
 )
 
 AdvancedRefitVertexNoBSProducer = cms.EDProducer(
@@ -36,6 +37,7 @@ AdvancedRefitVertexNoBSProducer = cms.EDProducer(
 	srcMuons = cms.InputTag("slimmedMuons"),
 	srcTaus = cms.InputTag("slimmedTaus"),
 	srcLeptons = cms.VInputTag(cms.InputTag("slimmedElectrons"), cms.InputTag("slimmedMuons"), cms.InputTag("slimmedTaus")),
+        storeAsMap = cms.bool(False)
 )
 
 AdvancedRefitVertexBS = cms.Sequence(AdvancedRefitVertexBSProducer)

@@ -2,4 +2,7 @@
 	<class name="RefitVertex"/>
 	<class name="std::vector<RefitVertex>"/>
 	<class name="edm::Wrapper<vector<RefitVertex> >"/>
+        <class name="std::map<unsigned long,reco::Vertex>"/>
+        <class name="edm::Wrapper<std::map<unsigned long,reco::Vertex> >"/>
+        <class name="std::pair<const unsigned long,reco::Vertex>"/>
 </lcgdict>

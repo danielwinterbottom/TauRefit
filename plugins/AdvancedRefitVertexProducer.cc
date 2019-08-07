@@ -126,7 +126,7 @@ void AdvancedRefitVertexProducer::produce(edm::Event& iEvent, const edm::EventSe
                 if ((std::abs(pair->at(0)->pdgId())==11 && std::abs(pair->at(1)->pdgId())==11) || (std::abs(pair->at(0)->pdgId())==13 && std::abs(pair->at(1)->pdgId())==13)) continue;
                 else if ((std::abs(pair->at(0)->pdgId())==11 && std::abs(pair->at(1)->pdgId())==13) || (std::abs(pair->at(0)->pdgId())==13 && std::abs(pair->at(1)->pdgId())==11)) {
                   // if pair is a mu+e pair 
-                  if((pair->at(0)->pt()<10. || pair->at(1)->pt()<10.) continue; 
+                  if(pair->at(0)->pt()<10. || pair->at(1)->pt()<10.) continue; 
                 } else if(std::abs(pair->at(0)->pdgId())==11 || std::abs(pair->at(1)->pdgId())==11 || std::abs(pair->at(0)->pdgId())==13 || std::abs(pair->at(1)->pdgId())==13) {
                   // if not mu+e or ee or mm pair and on of pair is lepton then we must have a et or mt event
                   if((std::abs(pair->at(0)->pdgId())==11 || std::abs(pair->at(1)->pdgId())==11) && pair->at(0)->pt()<20.) continue; 

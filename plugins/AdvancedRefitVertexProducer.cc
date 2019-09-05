@@ -122,18 +122,22 @@ void AdvancedRefitVertexProducer::produce(edm::Event& iEvent, const edm::EventSe
                 // Skip mumu and ee events alltogether
                 // For all other events (i.e et and mt candidates) apply 20 GeV pT cuts to leptons
 
-                // skip mumu and ee events
-                if ((std::abs(pair->at(0)->pdgId())==11 && std::abs(pair->at(1)->pdgId())==11) || (std::abs(pair->at(0)->pdgId())==13 && std::abs(pair->at(1)->pdgId())==13)) continue;
+                // skip /*mumu*/ and ee events
+                if ((std::abs(pair->at(0)->pdgId())==11 && std::abs(pair->at(1)->pdgId())==11) /*|| (std::abs(pair->at(0)->pdgId())==13 && std::abs(pair->at(1)->pdgId())==13)*/) continue;
+                else if (std::abs(pair->at(0)->pdgId())==13 && std::abs(pair->at(1)->pdgId())==13) {
+                  // if pair is a mu+e pair 
+                  if(pair->at(0)->pt()<19. || pair->at(1)->pt()<19.) continue;
+                } 
                 else if ((std::abs(pair->at(0)->pdgId())==11 && std::abs(pair->at(1)->pdgId())==13) || (std::abs(pair->at(0)->pdgId())==13 && std::abs(pair->at(1)->pdgId())==11)) {
                   // if pair is a mu+e pair 
                   if(pair->at(0)->pt()<10. || pair->at(1)->pt()<10.) continue; 
                 } else if(std::abs(pair->at(0)->pdgId())==11 || std::abs(pair->at(1)->pdgId())==11 || std::abs(pair->at(0)->pdgId())==13 || std::abs(pair->at(1)->pdgId())==13) {
                   // if not mu+e or ee or mm pair and on of pair is lepton then we must have a et or mt event
-                  if((std::abs(pair->at(0)->pdgId())==11 || std::abs(pair->at(1)->pdgId())==11) && pair->at(0)->pt()<20.) continue; 
-                  if((std::abs(pair->at(0)->pdgId())==13 || std::abs(pair->at(1)->pdgId())==13) && pair->at(0)->pt()<20.) continue;
+                  if((std::abs(pair->at(0)->pdgId())==11 || std::abs(pair->at(0)->pdgId())==11) && pair->at(0)->pt()<19.) continue; 
+                  if((std::abs(pair->at(1)->pdgId())==13 || std::abs(pair->at(1)->pdgId())==13) && pair->at(1)->pt()<19.) continue;
                 } else {
                   // else we must have two taus 
-                  if(pair->at(0)->pt()<38. || pair->at(1)->pt()<38.) continue;
+                  if(pair->at(0)->pt()<39. || pair->at(1)->pt()<39.) continue;
                 }
 
                 // create the TrackCollection for the current pair

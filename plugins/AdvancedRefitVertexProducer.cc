@@ -122,10 +122,23 @@ void AdvancedRefitVertexProducer::produce(edm::Event& iEvent, const edm::EventSe
                 // Skip mumu and ee events alltogether
                 // For all other events (i.e et and mt candidates) apply 20 GeV pT cuts to leptons
 
-                // skip /*mumu*/ and ee events
-                if ((std::abs(pair->at(0)->pdgId())==11 && std::abs(pair->at(1)->pdgId())==11) /*|| (std::abs(pair->at(0)->pdgId())==13 && std::abs(pair->at(1)->pdgId())==13)*/) continue;
+                // set a bool which is false if particle is a tau and fails tau IDs or true other wise
+                bool passTauID_1 = true, passTauID_2 = true;
+                if (std::abs(pair->at(0)->pdgId())==15) {
+                  pat::Tau const& tau = dynamic_cast<pat::Tau const&>(*(pair->at(0)));
+                  passTauID_1 = (tau.tauID("byVVVLooseDeepTau2017v2p1VSjet") && tau.tauID("byVVVLooseDeepTau2017v2p1VSe") && tau.tauID("byVLooseDeepTau2017v2p1VSmu")) || (tau.tauID("byVLooseIsolationMVArun2017v2DBnewDMwLT2017") && tau.tauID("againstElectronVLooseMVA6") && tau.tauID("againstMuonLoose3"));
+                }
+                if (std::abs(pair->at(1)->pdgId())==15) {
+                  pat::Tau const& tau = dynamic_cast<pat::Tau const&>(*(pair->at(1)));
+                  passTauID_2 = (tau.tauID("byVVVLooseDeepTau2017v2p1VSjet") && tau.tauID("byVVVLooseDeepTau2017v2p1VSe") && tau.tauID("byVLooseDeepTau2017v2p1VSmu")) || (tau.tauID("byVLooseIsolationMVArun2017v2DBnewDMwLT2017") && tau.tauID("againstElectronVLooseMVA6") && tau.tauID("againstMuonLoose3"));
+                }
+
+                // filter ee events wth pT < 19 GeV
+                if (std::abs(pair->at(0)->pdgId())==11 && std::abs(pair->at(1)->pdgId())==11) {
+                  if(pair->at(0)->pt()<19. || pair->at(1)->pt()<19.) continue;
+                } 
+                // filter mumu events with pT < 19 GeV
                 else if (std::abs(pair->at(0)->pdgId())==13 && std::abs(pair->at(1)->pdgId())==13) {
-                  // if pair is a mu+e pair 
                   if(pair->at(0)->pt()<19. || pair->at(1)->pt()<19.) continue;
                 } 
                 else if ((std::abs(pair->at(0)->pdgId())==11 && std::abs(pair->at(1)->pdgId())==13) || (std::abs(pair->at(0)->pdgId())==13 && std::abs(pair->at(1)->pdgId())==11)) {
@@ -133,10 +146,17 @@ void AdvancedRefitVertexProducer::produce(edm::Event& iEvent, const edm::EventSe
                   if(pair->at(0)->pt()<10. || pair->at(1)->pt()<10.) continue; 
                 } else if(std::abs(pair->at(0)->pdgId())==11 || std::abs(pair->at(1)->pdgId())==11 || std::abs(pair->at(0)->pdgId())==13 || std::abs(pair->at(1)->pdgId())==13) {
                   // if not mu+e or ee or mm pair and on of pair is lepton then we must have a et or mt event
-                  if((std::abs(pair->at(0)->pdgId())==11 || std::abs(pair->at(0)->pdgId())==11) && pair->at(0)->pt()<19.) continue; 
-                  if((std::abs(pair->at(1)->pdgId())==13 || std::abs(pair->at(1)->pdgId())==13) && pair->at(1)->pt()<19.) continue;
+                  
+                  //  reject event if tau fails ID cuts
+                  if(!passTauID_1 || !passTauID_2) continue;
+                  // reject event if lepton pTs are less than 19 GeV 
+                  if((std::abs(pair->at(0)->pdgId())==11 || std::abs(pair->at(0)->pdgId())==13) && pair->at(0)->pt()<19.) continue; 
+                  if((std::abs(pair->at(1)->pdgId())==11 || std::abs(pair->at(1)->pdgId())==13) && pair->at(1)->pt()<19.) continue;
                 } else {
-                  // else we must have two taus 
+                  // else we must have two taus
+                  //  reject event if taus fails ID cuts
+                  if(!passTauID_1 || !passTauID_2) continue;
+                  // reject event if taus pTs are less than 39 GeV
                   if(pair->at(0)->pt()<39. || pair->at(1)->pt()<39.) continue;
                 }
 
